@@ -75,43 +75,56 @@ func _check_dependencies(dependencies: Array) -> Array:
 	return issues
 
 func _finish(manifest: Variant, addon_id: String, on_ready: Callable) -> void:
-	if manifest != null and bool(manifest.get("gated", false)):
-		_unlock(addon_id)
+	if manifest != null:
+		_ensure_gdextension_loaded(addon_id)
 	on_ready.call()
 
-## Renames <id>.gdextension.available -> <id>.gdextension and loads it —
-## same mechanism as heathen_gate.gd's _unlock(), just generalized to any
-## addon this resolver is asked to gate rather than copy-pasted per addon.
-func _unlock(addon_id: String) -> void:
+## Makes sure addon_id's own native library, if it has one, is actually
+## loaded in the running process — renaming <id>.gdextension.available ->
+## <id>.gdextension first if it's still gated/inert. Handles three cases:
+## pure-GDScript addons (no .gdextension at all — no-op), gated addons
+## (rename + load), and already-ungated addons whose .gdextension is real
+## but genuinely not yet loaded this session (load only, no rename).
+##
+## That third case is the one a real cold-install test caught this
+## session that isn't obvious from the gating story alone: fetching a
+## *dependency* only ever wrote its files to disk — nothing loaded the
+## dependency's own native library into the process, since _unlock() (this
+## method's earlier, narrower form) only ever ran for the addon actually
+## being resolved, and only when it was itself gated. An ungated dependency
+## like Game-Framework (ships a real .gdextension directly, nothing to
+## rename) was never loaded at all after being fetched, so a freshly-loaded
+## *dependent*'s native library failed to dlopen it — "cannot open shared
+## object file", even though the file plainly existed on disk. Every
+## fetched dependency now goes through this same method (see _fetch_one()),
+## not just the resolve() target.
+func _ensure_gdextension_loaded(addon_id: String) -> void:
 	var addon_dir := "res://addons/%s" % addon_id
 	var real_path := "%s/%s%s" % [addon_dir, addon_id, GATED_UNLOCK_SUFFIX]
 	var inert_path := "%s.available" % real_path
 
-	if FileAccess.file_exists(real_path):
-		return # already unlocked, nothing to do.
+	if not FileAccess.file_exists(real_path):
+		if not FileAccess.file_exists(inert_path):
+			return # No .gdextension at all — a pure-GDScript addon, nothing to load.
 
-	if not FileAccess.file_exists(inert_path):
-		push_warning("ExtensionResolver: %s is marked gated but no %s.available found — nothing to unlock." % [addon_id, real_path])
-		return
-
-	var ok := DirAccess.rename_absolute(
-		ProjectSettings.globalize_path(inert_path),
-		ProjectSettings.globalize_path(real_path)
-	)
-	if ok != OK:
-		push_error("ExtensionResolver: failed to rename %s -> %s (error %d)." % [inert_path, real_path, ok])
-		return
+		var ok := DirAccess.rename_absolute(
+			ProjectSettings.globalize_path(inert_path),
+			ProjectSettings.globalize_path(real_path)
+		)
+		if ok != OK:
+			push_error("ExtensionResolver: failed to rename %s -> %s (error %d)." % [inert_path, real_path, ok])
+			return
 
 	var mgr = Engine.get_singleton("GDExtensionManager") if Engine.has_singleton("GDExtensionManager") else null
-	if mgr != null:
+	if mgr != null and not mgr.is_extension_loaded(real_path):
 		mgr.load_extension(real_path)
 
 	# Deferred for the same re-entrancy reason documented in
-	# heathen_gate.gd's _unlock(): triggering a full filesystem rescan from
-	# inside another plugin's still-running _enter_tree() re-enters Godot's
-	# own plugin-activation bookkeeping for that plugin. load_extension()
-	# above already makes everything usable in this session regardless of
-	# whether this runs.
+	# heathen_gate.gd's original _unlock(): triggering a full filesystem
+	# rescan from inside another plugin's still-running _enter_tree()
+	# re-enters Godot's own plugin-activation bookkeeping for that plugin.
+	# load_extension() above already makes everything usable in this
+	# session regardless of whether this runs.
 	if Engine.is_editor_hint():
 		EditorInterface.get_resource_filesystem().call_deferred("scan")
 
@@ -194,4 +207,13 @@ func _fetch_one(host: Node, issue: Dictionary) -> bool:
 	if url.is_empty():
 		return false
 
-	return await ExtensionSourceGithubRelease.fetch_and_extract(host, url, id, err)
+	var ok := await ExtensionSourceGithubRelease.fetch_and_extract(host, url, id, err)
+	if not ok:
+		return false
+
+	# See _ensure_gdextension_loaded()'s doc comment — a freshly-fetched
+	# dependency's own native library (if it has one) needs to actually be
+	# loaded into the process, not just extracted to disk, or a dependent
+	# fetched later in this same chain fails to dlopen it.
+	_ensure_gdextension_loaded(id)
+	return true
