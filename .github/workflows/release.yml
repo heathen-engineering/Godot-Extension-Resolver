@@ -1,0 +1,42 @@
+name: Package and release
+
+# Mirrors the "Package addon" job's zip-assembly shape from the other Heathen
+# Godot gems (e.g. Godot-xxHash/.github/workflows/build.yml) — a "package/"
+# staging dir containing "addons/<id>/...", zipped from inside that dir so
+# the archive's own top-level entry is "addons/". No build matrix here: this
+# addon is pure GDScript, nothing to compile, so this workflow is just the
+# packaging step those other repos only reach after a multi-platform C++
+# build.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  package:
+    name: Package addon
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Assemble addon package
+        run: |
+          mkdir -p package/addons/ExtensionResolver
+          cp -r addons/ExtensionResolver/*.gd package/addons/ExtensionResolver/
+          cp addons/ExtensionResolver/plugin.cfg package/addons/ExtensionResolver/
+          cp README.md package/addons/ExtensionResolver/ || true
+          cp LICENSE package/addons/ExtensionResolver/ || true
+          cd package && zip -r ../ExtensionResolver.zip addons
+
+      - name: Upload packaged addon
+        uses: actions/upload-artifact@v4
+        with:
+          name: ExtensionResolver
+          path: ExtensionResolver.zip
+
+      - name: Attach to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ExtensionResolver.zip
