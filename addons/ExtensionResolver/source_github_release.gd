@@ -84,7 +84,7 @@ static func fetch_and_extract(host: Node, download_url: String, id: String, out_
 	var zip_bytes := await _get_bytes(host, download_url, PackedStringArray(), out_error)
 	if zip_bytes.is_empty():
 		return false
-	return _extract_zip(zip_bytes, id, out_error)
+	return await _extract_zip(zip_bytes, id, out_error)
 
 static func _get_bytes(host: Node, url: String, headers: PackedStringArray = PackedStringArray(), out_error: Array = []) -> PackedByteArray:
 	var http := HTTPRequest.new()
@@ -170,5 +170,19 @@ static func _extract_zip(zip_bytes: PackedByteArray, dependency_id: String, out_
 	reader.close()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(tmp_path))
 	if Engine.is_editor_hint():
-		EditorInterface.get_resource_filesystem().scan()
+		# scan() only STARTS an async rescan — it doesn't wait for Godot to
+		# finish registering any newly-extracted class_name scripts or
+		# GDExtension dependencies. A caller that immediately enables a
+		# plugin or calls GDExtensionManager.load_extension() right after
+		# fetch_and_extract() returns can hit either a "class not found in
+		# scope" parse error (global class list not updated yet) or a
+		# dynamic-linker "No such file or directory" for a genuinely
+		# just-written .gdextension dependency (Godot's own internal
+		# dependency-loading appears to go through the same not-yet-
+		# refreshed project index) — both confirmed the hard way during a
+		# real cold-install test. Awaiting script_classes_updated blocks
+		# until that registration has actually happened.
+		var fs := EditorInterface.get_resource_filesystem()
+		fs.scan()
+		await fs.script_classes_updated
 	return true
