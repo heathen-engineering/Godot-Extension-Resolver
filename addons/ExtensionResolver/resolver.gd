@@ -19,28 +19,73 @@ extends Object
 
 const GATED_UNLOCK_SUFFIX := ".gdextension"
 
+## Only one addon's dialog is ever on screen at a time — see resolve()'s
+## queueing below. _active_addon_id is "" when nothing is mid-resolution;
+## _queue holds {host, addon_id, on_ready} for every resolve() call that
+## arrived while another addon's dialog was already up.
+var _active_addon_id: String = ""
+var _queue: Array = []
+
 ## Returns true if addon_id's dependencies are already satisfied (and any
 ## gating unlock already performed) — caller can proceed immediately,
 ## synchronously, same as heathen_gate.gd's contract. Returns false if
 ## resolution isn't complete yet; on_ready is invoked later, possibly after
 ## a user-confirmed fetch, once it is. host is any Node currently in the
 ## tree, used only to parent dialogs/HTTPRequests.
+##
+## Queued, not fanned out: several gems calling resolve() back-to-back
+## during editor startup often share a dependency (e.g. every gem depends
+## on Game-Framework) — without queueing, each one independently found the
+## same issue and popped its own dialog, so resolving Game-Framework once
+## in the first dialog still left N-1 redundant "Game-Framework missing"
+## dialogs behind it, all for a dependency that was already fixed. The
+## already-satisfied fast path below (issues.is_empty()) is deliberately
+## NOT gated behind the queue — it never shows UI, so there's no reason to
+## make an already-clear addon wait its turn. Only the dialog-needing slow
+## path queues, and only behind a DIFFERENT addon's in-flight resolution;
+## a retry/recheck for the addon that already owns _active_addon_id must
+## still go through immediately, not queue behind itself.
 func resolve(host: Node, addon_id: String, on_ready: Callable) -> bool:
 	var manifest = ExtensionManifestReader.read_manifest_for(addon_id)
 	if manifest == null:
 		push_warning("ExtensionResolver: %s has no extension.manifest.json — nothing to check, unlocking directly." % addon_id)
 		_finish(null, addon_id, on_ready)
+		_drain_queue_if_idle()
 		return true
 
 	var issues := _check_dependencies(manifest.get("dependencies", []))
 	if issues.is_empty():
 		_finish(manifest, addon_id, on_ready)
+		_drain_queue_if_idle()
 		return true
 
+	if _active_addon_id != "" and _active_addon_id != addon_id:
+		_queue.append({"host": host, "addon_id": addon_id, "on_ready": on_ready})
+		return false
+
+	_active_addon_id = addon_id
 	_show_dialog(host, addon_id, issues, func():
+		# Release the lock before re-checking — if this addon's own issues
+		# are now resolved, resolve()'s fast path fires _drain_queue_if_idle()
+		# itself; if not (recheck failed, fetch failed), resolve() re-shows
+		# the dialog and re-acquires _active_addon_id immediately below, so
+		# the queue never sees a window where it looks idle mid-retry.
+		_active_addon_id = ""
 		resolve(host, addon_id, on_ready)
 	)
 	return false
+
+## Pops the next queued request (if any) and re-runs resolve() for it from
+## scratch — deliberately re-checking dependencies rather than assuming
+## they're still unmet, since the resolution that just finished may have
+## been the exact shared dependency this queued entry was also waiting on,
+## in which case it now resolves instantly via the fast path with no
+## dialog of its own.
+func _drain_queue_if_idle() -> void:
+	if _active_addon_id != "" or _queue.is_empty():
+		return
+	var next: Dictionary = _queue.pop_front()
+	resolve(next["host"], next["addon_id"], next["on_ready"])
 
 ## Dictionary per dependency currently missing or out of range:
 ## { id, reason ("missing"/"version"), installed_version, min_version,

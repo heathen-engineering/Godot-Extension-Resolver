@@ -10,7 +10,7 @@ extends RefCounted
 ## parsing implementation instead of three slightly-different ones.
 
 const MANIFEST_FILENAME := "extension.manifest.json"
-const CURRENT_SCHEMA_VERSION := 1
+const CURRENT_SCHEMA_VERSION := 2
 
 ## Scans res://addons/*/extension.manifest.json and returns a Dictionary of
 ## id -> parsed manifest Dictionary for every addon that ships one. Addons
@@ -55,11 +55,13 @@ static func _read(path: String) -> Variant:
 		push_warning("ExtensionManifestReader: malformed manifest at %s" % path)
 		return null
 
-	# schema_version is forward-compatibility bookkeeping, not enforced yet —
-	# there's only ever been version 1 so far. Once a version 2 exists this
-	# is where a migration/rejection decision gets made; deliberately not
-	# building that machinery before there's a second version to migrate
-	# from.
+	# schema_version is forward-compatibility bookkeeping, not enforced yet.
+	# Version 2 (documentation_url/license_url/support_url/publisher/
+	# description) only ADDS optional fields — every .get(field, default) call
+	# reading them already degrades gracefully on an old version-1 manifest
+	# that simply doesn't have them, so no migration/rejection logic exists
+	# here yet. Revisit if a future version ever needs to change the meaning
+	# of an existing field rather than just add new ones.
 	if int(parsed.get("schema_version", 0)) > CURRENT_SCHEMA_VERSION:
 		push_warning("ExtensionManifestReader: %s declares schema_version %s, newer than this resolver understands (%s)." % [path, parsed["schema_version"], CURRENT_SCHEMA_VERSION])
 

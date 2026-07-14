@@ -38,11 +38,19 @@ greppable.
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "id": "FoundationGameFramework",
   "display_name": "Foundation for Game Framework",
   "version": "1.0.0",
   "repository_url": "https://github.com/heathen-engineering/Godot-Game-Framework",
+  "documentation_url": "https://github.com/heathen-engineering/Godot-Game-Framework#readme",
+  "support_url": "https://github.com/heathen-engineering/Godot-Game-Framework/issues",
+  "license_url": "https://github.com/heathen-engineering/Godot-Game-Framework/blob/main/LICENSE",
+  "publisher": {
+    "name": "Heathen Engineering Limited",
+    "url": "https://heathen.group"
+  },
+  "description": "The engine-agnostic Subsystem/World/GameMode runtime every other Foundation gem builds on. See [Discord](https://discord.gg/example) for support.",
   "source": {
     "type": "github_release",
     "repo": "heathen-engineering/Godot-Game-Framework"
@@ -65,11 +73,16 @@ greppable.
 
 | Field | Required | Notes |
 |---|---|---|
-| `schema_version` | Yes | Integer. Lets the resolver evolve the format later without silently mis-parsing an old manifest. Starts at `1`. |
+| `schema_version` | Yes | Integer. Lets the resolver evolve the format later without silently mis-parsing an old manifest. Starts at `1`; `2` (current) only adds optional fields below, so a `schema_version: 1` manifest with none of them is still perfectly valid — nothing was removed or repurposed. |
 | `id` | Yes | Must match the addon's own folder name under `res://addons/`. This is the identity used everywhere else (dependency references, installed-version lookups) — not `display_name`, which is presentation-only and can change freely. |
 | `display_name` | Yes | Human-readable, shown in the resolver's UI. |
 | `version` | Yes | The version of *this* addon, as currently installed. Semver (`MAJOR.MINOR.PATCH`), optional leading `v` stripped before comparison. This is the field the resolver diffs against a dependent's `min_version`/`max_version`, and against `source`'s latest-available version to decide whether an update exists. |
 | `repository_url` | No | Plain human-facing link, shown in the UI ("View project"). Not used for fetching — that's `source`'s job. Optional because not every extension author wants to point at a public repo even if `source` resolves through one (e.g. private-release-gated extensions like Steamworks today). |
+| `documentation_url` | No (added in v2) | Shown as a "Documentation" link in the settings tab's standard-links row. Plain URL — the author's own docs site, README, wiki, whatever's appropriate. |
+| `support_url` | No (added in v2) | Shown as a "Support" link — issue tracker, Discord, support form, whatever the publisher wants users to hit when something's broken. |
+| `license_url` | No (added in v2) | Shown as a "License" link — usually the repo's own `LICENSE` file. |
+| `publisher` | No (added in v2) | `{ "name": string, "url"?: string }`. Drives the settings tab's UPM-style grouping — every installed addon is listed under a collapsible group named for its publisher, defaulted expanded. Addons with no `publisher.name` fall into one shared "Unknown Publisher" group rather than erroring. `url` (optional) is shown as the publisher name's hyperlink if present, plain text otherwise. |
+| `description` | No (added in v2) | A short blurb shown in the settings tab's detail pane, in a self-expanding scrollable text block. May contain `[text](url)` Markdown-style links (e.g. to point at a Patreon/Sponsorship page) — the resolver converts just that link subset to BBCode for display; it is **not** a full Markdown renderer, don't rely on other Markdown syntax rendering correctly. |
 | `source` | Yes, unless the addon is never expected to be fetched/updated by the resolver (e.g. something a user is expected to always hand-install) | Describes *where and how* to fetch a specific version of this extension. See "Source types" below. |
 | `gated` | No, default `false` | `true` if this addon ships a GDExtension binary with a hard native-library dependency and needs the inert-`.gdextension.available` → real-`.gdextension` unlock step (see "Gating convention" below) before Godot can load it. Pure-GDScript addons, or GDExtensions with no hard dependencies, leave this `false`/omitted — nothing to gate. |
 | `dependencies` | No, default `[]` | Array of dependency descriptors — see below. |
@@ -145,6 +158,17 @@ restart. This absorbs `heathen_gate.gd`'s `_unlock()` responsibility into the re
 see the (forthcoming) gate-stub design doc for what a hosting extension's own bootstrap script
 still needs to do on its own (locating/fetching the resolver itself, before any of this can run).
 
+## Uninstall (Remove)
+
+The settings tab's **Remove** button deletes `res://addons/<id>/` and disables the addon's
+`plugin.cfg` (if it has one), after a confirmation dialog. Before deleting, it scans every *other*
+installed manifest's `dependencies` array for a reference to the addon being removed and lists any
+matches in the confirmation dialog as "will likely break" — a soft warning, not a hard block;
+Remove still proceeds if the user confirms anyway. No orphan-cleanup beyond that (removing an
+addon doesn't cascade-remove anything that *it* depended on) — deliberately conservative, since a
+shared dependency another still-installed addon needs is exactly the case this warning exists to
+catch before it happens by accident.
+
 ## Open questions
 
 - **Version comparison semantics for pre-release/build-metadata suffixes** (`1.0.0-beta`,
@@ -152,6 +176,3 @@ still needs to do on its own (locating/fetching the resolver itself, before any 
   MVP? Lean toward the simpler rule until an extension actually needs pre-release channels.
 - **Conflicting `source` declarations for the same dependency `id`** (see "Source precedence"
   above) — warn-and-pick vs. hard error vs. something else.
-- **Uninstall / dependency-orphan cleanup** isn't covered by this schema at all yet — today's
-  fetch-only flows never needed a removal story. Worth deciding whether that's in scope for v1 or
-  a deliberately later addition.
