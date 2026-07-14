@@ -148,6 +148,7 @@ func _ensure_gdextension_loaded(addon_id: String) -> void:
 	var real_path := "%s/%s%s" % [addon_dir, addon_id, GATED_UNLOCK_SUFFIX]
 	var inert_path := "%s.available" % real_path
 	var has_gdextension := true
+	var just_renamed := false
 
 	if not FileAccess.file_exists(real_path):
 		if not FileAccess.file_exists(inert_path):
@@ -160,23 +161,23 @@ func _ensure_gdextension_loaded(addon_id: String) -> void:
 			if ok != OK:
 				push_error("ExtensionResolver: failed to rename %s -> %s (error %d)." % [inert_path, real_path, ok])
 				has_gdextension = false
+			else:
+				just_renamed = true
 
 	if has_gdextension:
 		var mgr = Engine.get_singleton("GDExtensionManager") if Engine.has_singleton("GDExtensionManager") else null
 		if mgr != null and not mgr.is_extension_loaded(real_path):
 			mgr.load_extension(real_path)
 
-		# Deferred for the same re-entrancy reason documented below on
-		# _ensure_plugin_enabled(): triggering a full filesystem rescan from
-		# inside another plugin's still-running _enter_tree() re-enters
-		# Godot's own plugin-activation bookkeeping for that plugin.
-		# load_extension() above already makes everything usable in this
-		# session regardless of whether this runs.
-		if Engine.is_editor_hint():
+		# Only scan when a .gdextension.available -> .gdextension rename just
+		# happened — that's the only case where the filesystem actually
+		# changed. Firing this unconditionally on every self-resolution fast
+		# path (i.e. once per gem, every boot, even when nothing changed) was
+		# producing overlapping/concurrent filesystem-thread scans; see
+		# _ensure_plugin_enabled()'s doc comment for the related
+		# duplicate-activation bug this was compounding.
+		if just_renamed and Engine.is_editor_hint():
 			EditorInterface.get_resource_filesystem().call_deferred("scan")
-
-	if Engine.is_editor_hint():
-		call_deferred("_ensure_plugin_enabled", addon_id)
 
 ## A dependency fetched automatically (as opposed to an addon the user directly enabled via
 ## Project Settings > Plugins) never gets its own plugin.cfg enabled by anything else in this
@@ -184,10 +185,17 @@ func _ensure_gdextension_loaded(addon_id: String) -> void:
 ## loaded and SubsystemManagerBridge worked immediately after being pulled in as a dependency,
 ## but FoundationGameFrameworkEditorPlugin.gd's _enter_tree() (which is what actually builds
 ## the Subsystems settings tab) never ran, so the tab silently never appeared until manually
-## enabled. Runs for every resolved addon_id, not just fetched dependencies — harmless no-op
-## for the addon whose own gate triggered this resolve() call, since being enabled is what
-## caused that gate to run in the first place. Deferred for the same re-entrancy reason as the
-## scan() call above.
+## enabled.
+##
+## Only ever called from _fetch_one() for a dependency that was just fetched this session —
+## NOT for the addon resolving itself (that used to run from _ensure_gdextension_loaded(),
+## called from both _finish()'s self-resolution path and _fetch_one()'s dependency-fetch path).
+## For the self-resolution case, Godot is already mid-activation of that exact plugin — that's
+## *why* its gate fired from _enter_tree() in the first place — and calling
+## EditorInterface.set_plugin_enabled() on a plugin Godot is already enabling produced
+## "Condition p_enabled && addon_name_to_plugin.has(addon_path)" errors, one of which (Ogham,
+## the one gem with a floating EditorDock) visibly manifested as a duplicate dock entry. Deferred
+## for the same re-entrancy reason the scan() call above uses.
 func _ensure_plugin_enabled(addon_id: String) -> void:
 	var plugin_cfg_path := "res://addons/%s/plugin.cfg" % addon_id
 	if not FileAccess.file_exists(plugin_cfg_path):
@@ -287,4 +295,9 @@ func _fetch_one(host: Node, issue: Dictionary) -> bool:
 	# loaded into the process, not just extracted to disk, or a dependent
 	# fetched later in this same chain fails to dlopen it.
 	_ensure_gdextension_loaded(id)
+
+	# Only for a freshly-fetched dependency, never for the addon resolving
+	# itself — see _ensure_plugin_enabled()'s doc comment.
+	if Engine.is_editor_hint():
+		call_deferred("_ensure_plugin_enabled", id)
 	return true

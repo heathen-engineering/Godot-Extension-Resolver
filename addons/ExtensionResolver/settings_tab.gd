@@ -396,24 +396,40 @@ func _show_detail_for(id: String) -> void:
 	# sibling of the scrolling _detail_scroll, not inside it — see
 	# _ensure_built()).
 	var check_update_button := Button.new()
-	check_update_button.text = "Check for Updates"
+	check_update_button.text = "Update"
 	var source: Dictionary = manifest.get("source", {})
 	check_update_button.disabled = source.get("repo", "") == ""
 	check_update_button.pressed.connect(func():
 		check_update_button.disabled = true
 		update_label.text = "Checking..."
 		var err: Array = [""]
-		var release = await ExtensionSourceGithubRelease.fetch_release(self, source.get("repo", ""), "latest", err)
-		check_update_button.disabled = false
+		var repo: String = source.get("repo", "")
+		var release = await ExtensionSourceGithubRelease.fetch_release(self, repo, "latest", err)
 		if release == null:
+			check_update_button.disabled = false
 			update_label.text = "Could not check for updates: %s" % err[0]
 			return
 		var latest_version: String = String(release.get("tag_name", "")).trim_prefix("v")
 		var installed_version: String = manifest.get("version", "")
-		if ExtensionSemver.compare(latest_version, installed_version) > 0:
-			update_label.text = "Update available: %s -> %s" % [installed_version, latest_version]
-		else:
-			update_label.text = "Up to date (%s)." % installed_version
+		if ExtensionSemver.compare(latest_version, installed_version) <= 0:
+			check_update_button.disabled = false
+			update_label.text = "Already up to date (%s)." % installed_version
+			return
+
+		update_label.text = "Updating %s -> %s..." % [installed_version, latest_version]
+		var url := ExtensionSourceGithubRelease.select_asset_url(release, id, source.get("asset_pattern", ""))
+		if url.is_empty():
+			check_update_button.disabled = false
+			update_label.text = "Update available (%s) but no matching release asset found." % latest_version
+			return
+		var ok := await ExtensionSourceGithubRelease.fetch_and_extract(self, url, id, err)
+		check_update_button.disabled = false
+		if not ok:
+			update_label.text = "Failed to update: %s" % err[0]
+			return
+		_resolver._ensure_gdextension_loaded(id)
+		update_label.text = "Updated to %s." % latest_version
+		refresh()
 	)
 	_detail_buttons.add_child(check_update_button)
 
