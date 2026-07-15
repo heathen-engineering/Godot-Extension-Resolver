@@ -2,7 +2,7 @@
     "schema_version": 2,
     "id": "ExtensionResolver",
     "display_name": "Extension Resolver for Godot",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "repository_url": "https://github.com/heathen-engineering/Godot-Extension-Resolver",
     "documentation_url": "https://heathen.group/kb/godot-welcome/#extension-resolver",
     "support_url": "https://discord.gg/xmtRNkW7hW",
