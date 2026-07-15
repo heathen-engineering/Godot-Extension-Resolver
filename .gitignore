@@ -1,0 +1,5 @@
+# Godot's own editor cache for the test-harness project.godot at repo root
+# (added so the addon has somewhere to boot for local testing / CI's
+# headless smoke-boot check — see test/run_tests.gd and
+# .github/workflows/test.yml). Never committed, regenerated on any boot.
+.godot/

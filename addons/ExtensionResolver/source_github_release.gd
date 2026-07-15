@@ -76,6 +76,26 @@ static func select_asset_url(release: Dictionary, id: String, asset_pattern: Str
 
 	return ""
 
+## Locates the "<id>/" segment itself within a zip entry's path, rather than
+## assuming a fixed nesting depth (e.g. always "strip exactly one leading
+## component"), and returns everything after it — "" if dependency_id never
+## appears in entry_path at all (a stray entry that isn't part of this
+## addon's own folder). Real release zips built by this project's own CI
+## (Godot-xxHash/.github/workflows/*.yml's "Package addon" job) are rooted
+## two levels deep — "addons/FoundationXxHash/plugin.cfg" — not one
+## ("FoundationXxHash/plugin.cfg") the way heathen_gate.gd's own
+## strip-first-component logic assumed. That mismatch was never caught
+## because nothing exercised the fetch-and-extract path end-to-end before
+## this tool existed — searching for the id itself is robust to either
+## shape, and to any other prefix a future packaging change might add. Pure
+## function, no I/O — see test/test_source_github_release.gd.
+static func relative_path_within_id(entry_path: String, dependency_id: String) -> String:
+	var marker := "%s/" % dependency_id
+	var marker_at := entry_path.find(marker)
+	if marker_at == -1:
+		return ""
+	return entry_path.substr(marker_at + marker.length())
+
 ## Downloads and extracts a zip asset into res://addons/<id>/, stripping the
 ## archive's own root folder the same way HeathenDependencyFetcher/
 ## heathen_gate.gd both already do (an archive is expected to be rooted at
@@ -128,26 +148,11 @@ static func _extract_zip(zip_bytes: PackedByteArray, dependency_id: String, out_
 	if not DirAccess.dir_exists_absolute(ProjectSettings.globalize_path(dest_root)):
 		DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(dest_root))
 
-	# Locates the "<id>/" segment itself rather than assuming a fixed
-	# nesting depth (e.g. always "strip exactly one leading component").
-	# Real release zips built by this project's own CI
-	# (Godot-xxHash/.github/workflows/*.yml's "Package addon" job) are
-	# rooted two levels deep — "addons/FoundationXxHash/plugin.cfg" — not
-	# one ("FoundationXxHash/plugin.cfg") the way heathen_gate.gd's own
-	# strip-first-component logic assumed. That mismatch was never caught
-	# because nothing exercises the fetch-and-extract path end-to-end today
-	# (confirmed while researching this tool) — searching for the id itself
-	# is robust to either shape, and to any other prefix a future packaging
-	# change might add.
-	var marker := "%s/" % dependency_id
 	for entry_path in reader.get_files():
 		if entry_path.ends_with("/"):
 			continue
 
-		var marker_at := entry_path.find(marker)
-		if marker_at == -1:
-			continue # not part of this addon's own folder — skip stray entries.
-		var relative_path := entry_path.substr(marker_at + marker.length())
+		var relative_path := relative_path_within_id(entry_path, dependency_id)
 		if relative_path.is_empty():
 			continue
 

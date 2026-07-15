@@ -1,0 +1,15 @@
+; Engine configuration file.
+; Minimal — this project exists only to give the addon somewhere to boot
+; for local testing and CI's headless smoke-boot check. It is not shipped;
+; the release workflow packages addons/ExtensionResolver/ directly.
+
+config_version=5
+
+[application]
+
+config/name="ExtensionResolver Test Harness"
+config/features=PackedStringArray("4.3")
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/ExtensionResolver/plugin.cfg")

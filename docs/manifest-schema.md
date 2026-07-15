@@ -1,6 +1,8 @@
 # Extension Manifest Schema
 
-**Status: Draft — first pass, not yet implemented or battle-tested.**
+**Status: Locked — schema v2 implemented and in production use across 6 gems
+(Game-Framework, GameplayTags, Lexicon, Ogham, Steamworks, xxHash) plus TheBarrow's own game
+project. Both "Open questions" below are resolved as of v1.0.0; see "Resolved questions."**
 
 ## What this is for
 
@@ -169,10 +171,14 @@ addon doesn't cascade-remove anything that *it* depended on) — deliberately co
 shared dependency another still-installed addon needs is exactly the case this warning exists to
 catch before it happens by accident.
 
-## Open questions
+## Resolved questions
 
 - **Version comparison semantics for pre-release/build-metadata suffixes** (`1.0.0-beta`,
-  `1.0.0+build5`) — full semver precedence rules, or a simpler "ignore anything after `-`/`+`"
-  MVP? Lean toward the simpler rule until an extension actually needs pre-release channels.
+  `1.0.0+build5`) — resolved as the simpler MVP: `ExtensionSemver.parse()` strips anything from
+  the first `-` or `+` onward and ignores it, rather than implementing full semver precedence.
+  Revisit only once an extension actually needs pre-release channels.
 - **Conflicting `source` declarations for the same dependency `id`** (see "Source precedence"
-  above) — warn-and-pick vs. hard error vs. something else.
+  above) — resolved as warn-and-pick, not a hard error: `ExtensionResolverCore._warn_if_conflicting_source()`
+  scans every other installed manifest's own `dependencies` for a different declared repo for the
+  same `id` and `push_warning()`s if found, but resolution still proceeds using whichever source
+  belongs to the addon currently being resolved.

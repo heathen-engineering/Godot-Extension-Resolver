@@ -53,7 +53,7 @@ func resolve(host: Node, addon_id: String, on_ready: Callable) -> bool:
 		_drain_queue_if_idle()
 		return true
 
-	var issues := _check_dependencies(manifest.get("dependencies", []))
+	var issues := _check_dependencies(manifest.get("dependencies", []), addon_id)
 	if issues.is_empty():
 		_finish(manifest, addon_id, on_ready)
 		_drain_queue_if_idle()
@@ -90,8 +90,10 @@ func _drain_queue_if_idle() -> void:
 ## Dictionary per dependency currently missing or out of range:
 ## { id, reason ("missing"/"version"), installed_version, min_version,
 ##   max_version, source }. Empty array means every declared dependency is
-## present and version-satisfying.
-func _check_dependencies(dependencies: Array) -> Array:
+## present and version-satisfying. requesting_addon_id is only used for the
+## conflicting-source warning below — it plays no part in the actual
+## satisfies() check.
+func _check_dependencies(dependencies: Array, requesting_addon_id: String) -> Array:
 	var issues: Array = []
 	for dep in dependencies:
 		if typeof(dep) != TYPE_DICTIONARY or not dep.has("id"):
@@ -107,6 +109,12 @@ func _check_dependencies(dependencies: Array) -> Array:
 				"min_version": min_version, "max_version": max_version,
 				"source": dep.get("source", {}),
 			})
+			# Only meaningful while dep_id is still missing — see
+			# docs/manifest-schema.md's "Source precedence": an installed
+			# dependency's own manifest is always authoritative once
+			# present, so a conflicting declared source elsewhere never
+			# actually gets consulted once dep_id is installed.
+			_warn_if_conflicting_source(requesting_addon_id, dep_id, dep.get("source", {}))
 			continue
 
 		var installed_version: String = dep_manifest.get("version", "")
@@ -118,6 +126,32 @@ func _check_dependencies(dependencies: Array) -> Array:
 			})
 
 	return issues
+
+## Resolves docs/manifest-schema.md's "Conflicting source declarations" open
+## question: warn-and-pick, not a hard error. Scans every OTHER installed
+## manifest's own "dependencies" array for a different declared repo for the
+## same dep_id (e.g. two forks pointing at different repos) — this usually
+## indicates a real project misconfiguration worth surfacing, but resolution
+## still proceeds using whichever source belongs to requesting_addon_id,
+## same as before this warning existed.
+func _warn_if_conflicting_source(requesting_addon_id: String, dep_id: String, this_source: Dictionary) -> void:
+	var this_repo: String = this_source.get("repo", "")
+	if this_repo.is_empty():
+		return
+	var installed := ExtensionManifestReader.scan_installed()
+	for other_id in installed:
+		if other_id == requesting_addon_id:
+			continue
+		var other_manifest: Dictionary = installed[other_id]
+		for other_dep in other_manifest.get("dependencies", []):
+			if typeof(other_dep) != TYPE_DICTIONARY or other_dep.get("id", "") != dep_id:
+				continue
+			var other_repo: String = other_dep.get("source", {}).get("repo", "")
+			if not other_repo.is_empty() and other_repo != this_repo:
+				push_warning(
+					"ExtensionResolver: conflicting 'source' declared for dependency '%s' — '%s' wants repo '%s' but '%s' wants repo '%s'. Using '%s' since '%s' is the one currently being resolved; this usually means a real project misconfiguration." %
+					[dep_id, requesting_addon_id, this_repo, other_id, other_repo, this_repo, requesting_addon_id]
+				)
 
 func _finish(manifest: Variant, addon_id: String, on_ready: Callable) -> void:
 	if manifest != null:

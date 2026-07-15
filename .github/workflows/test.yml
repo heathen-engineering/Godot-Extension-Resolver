@@ -1,0 +1,40 @@
+name: Test
+
+# Functional verification the release workflow deliberately doesn't do —
+# that one only zips and packages on a tag push, so a parse error or a
+# broken assertion could ship in a tagged release undetected (this is
+# exactly how the "Round 2" live-testing bugs from 2026-07-14 were found:
+# nothing in CI caught them, a real sandbox session did). This workflow
+# runs the unit test suite (test/run_tests.gd) and a headless editor
+# smoke-boot on every push and pull request, not just tags — catches the
+# cheap stuff (a semver regression, a zip-layout assumption breaking, a
+# GDScript parse error) before a human has to find it live.
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: Unit tests + headless smoke boot
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Godot
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.3.0
+          use-dotnet: false
+
+      - name: Run unit tests
+        run: godot --headless --script res://test/run_tests.gd
+
+      - name: Headless smoke boot (catches parse/registration errors)
+        run: |
+          godot --headless --editor --quit 2>&1 | tee boot.log
+          if grep -iE "error|warning" boot.log; then
+            echo "Errors or warnings found during headless boot — see above."
+            exit 1
+          fi

@@ -1,0 +1,21 @@
+{
+    "schema_version": 2,
+    "id": "ExtensionResolver",
+    "display_name": "Extension Resolver for Godot",
+    "version": "1.0.0",
+    "repository_url": "https://github.com/heathen-engineering/Godot-Extension-Resolver",
+    "documentation_url": "https://heathen.group/kb/godot-welcome/#extension-resolver",
+    "support_url": "https://discord.gg/xmtRNkW7hW",
+    "license_url": "https://github.com/heathen-engineering/Godot-Extension-Resolver/blob/main/LICENSE",
+    "publisher": {
+        "name": "Heathen Group",
+        "url": "https://heathen.group"
+    },
+    "description": "Dependency resolution for Godot extensions: reads each installed addon's extension.manifest.json, checks declared dependencies against min/max version constraints, offers to fetch missing or out-of-range ones from their declared source, and performs the .gdextension.available unlock step for gated native extensions. Pure GDScript — no native code, no dependencies of its own.",
+    "source": {
+        "type": "github_release",
+        "repo": "heathen-engineering/Godot-Extension-Resolver"
+    },
+    "gated": false,
+    "dependencies": []
+}

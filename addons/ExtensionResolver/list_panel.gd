@@ -161,7 +161,7 @@ func refresh() -> void:
 		for id in member_ids:
 			var manifest: Dictionary = _current_items[id]
 			var item := _tree.create_item(group_item)
-			var issues := _resolver._check_dependencies(manifest.get("dependencies", []))
+			var issues := _resolver._check_dependencies(manifest.get("dependencies", []), id)
 			item.set_icon(COL_STATUS, _status_icon(issues))
 			item.set_text(COL_NAME, String(manifest.get("display_name", id)))
 			item.set_metadata(COL_NAME, id)
@@ -367,7 +367,7 @@ func _render_detail(id: String, manifest: Dictionary, is_installed: bool) -> voi
 
 	_detail_content.add_child(HSeparator.new())
 
-	var issues: Array = _resolver._check_dependencies(manifest.get("dependencies", []))
+	var issues: Array = _resolver._check_dependencies(manifest.get("dependencies", []), id)
 	var deps_label := Label.new()
 	if manifest.get("dependencies", []).is_empty():
 		deps_label.text = "No dependencies declared."

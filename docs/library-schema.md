@@ -1,8 +1,11 @@
 # Library Schema
 
-**Status: Draft — Phase 1 (github_release-sourced entries, URL/local sources only). See
-docs/extensions/04-libraries.md in TheBarrow for the full design, including what's deferred to
-Phase 2 (`git_subfolder` fetch, repo-root multi-library scanning, private-library detection).**
+**Status: Locked for Phase 1 (github_release-sourced entries, URL/local sources only) — built,
+GUI-verified, and shipped in v0.1.6/v1.0.0. Phase 2 (`git_subfolder` fetch, repo-root
+multi-library scanning, private-library detection) remains Draft/not-yet-designed and is
+explicitly scoped as post-1.0 work — see docs/extensions/04-libraries.md in TheBarrow for the
+full design, including why Phase 2 and the separate "SourceRepo problem" deserve their own
+dedicated design pass rather than blocking this addon's own core-stability release.**
 
 ## What this is for
 
