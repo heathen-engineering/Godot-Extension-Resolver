@@ -7,10 +7,7 @@ missing or out-of-range dependencies from their declared source, update-availabi
 against already-installed extensions, and the unlock step for gated GDExtension binaries with a
 hard native-library dependency.
 
-Not Heathen-specific — the manifest format and resolution mechanism are generic. Any Godot
-extension author can adopt it without adopting anything else Heathen-shaped. Not a marketplace —
-it never browses or discovers extensions a project doesn't already reference; that's the Asset
-Library's job.
+<img width="1201" height="729" alt="image" src="https://github.com/user-attachments/assets/d0c7d727-5d02-4664-b99d-3af6f5b51fd9" />
 
 See [`docs/manifest-schema.md`](docs/manifest-schema.md) for the manifest format.
 
