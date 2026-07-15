@@ -18,6 +18,12 @@ A dependency resolver for Godot addons. Any addon that ships a small manifest fi
 
 ---
 
+## Support
+
+For general questions, help, and troubleshooting, join our [Discord](https://discord.gg/xmtRNkW7hW). Thousands of developers are there and can often help faster than waiting on a maintainer. Please use [GitHub Issues](https://github.com/heathen-engineering/Godot-Extension-Resolver/issues) for a confirmed bug or a feature request that needs tracking, not general support questions.
+
+---
+
 ## Become a GitHub Sponsor
 [![Discord](https://img.shields.io/badge/Discord--1877F2?style=social&logo=discord)](https://discord.gg/xmtRNkW7hW)
 [![GitHub followers](https://img.shields.io/github/followers/heathen-engineering?style=social)](https://github.com/heathen-engineering?tab=followers)
