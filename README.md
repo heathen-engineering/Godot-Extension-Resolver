@@ -1,33 +1,68 @@
 # Extension Resolver for Godot
 
-Dependency resolution for Godot extensions. Any addon that ships an `extension.manifest.json` at
-its root gets, for free: version-guarded dependency checking (not just "is it installed" but "is
-it installed at a version that actually satisfies what I need"), user-confirmed fetching of
-missing or out-of-range dependencies from their declared source, update-availability checking
-against already-installed extensions, and the unlock step for gated GDExtension binaries with a
-hard native-library dependency.
+![License](https://img.shields.io/badge/License-Apache_2.0-blue?style=flat-square)
+![Maintained](https://img.shields.io/badge/Maintained%3F-yes-green?style=flat-square)
+![Godot](https://img.shields.io/badge/Godot-4.6%20%2B-%23478CBF?style=flat-square&logo=godotengine&logoColor=white)
 
-<img width="1201" height="729" alt="image" src="https://github.com/user-attachments/assets/d0c7d727-5d02-4664-b99d-3af6f5b51fd9" />
+A dependency resolver for Godot addons. Any addon that ships a small manifest file gets, for free: version-checked dependency resolution, one-click fetching of missing dependencies from their declared source, update-availability checking, and a safe unlock step for GDExtension binaries with a hard native-library dependency.
 
-See [`docs/manifest-schema.md`](docs/manifest-schema.md) for the manifest format.
+- **License:** Apache 2.0
+- **Origin:** Heathen Group
+- **Platforms:** Windows, Linux, macOS
 
-## Installing
+> [!TIP]
+> **Looking for the easiest way to install?**
+> Copy `addons/ExtensionResolver/` straight into your project's `addons/` folder and enable the plugin. See [Install](#install) below.
 
-Extension Resolver is pure GDScript — no compiled binary, no native-library load-order risk. Drop
-`addons/ExtensionResolver/` into `res://addons/` and enable the plugin, or let another extension's
-gate stub (`gate/extension_resolver_gate.gd`) fetch and enable it for you the first time it's
-needed.
+<img width="1201" height="729" alt="Extension Resolver's Project Settings tab, showing installed extensions grouped by publisher" src="https://github.com/user-attachments/assets/d0c7d727-5d02-4664-b99d-3af6f5b51fd9" />
+
+---
+
+## Become a GitHub Sponsor
+[![Discord](https://img.shields.io/badge/Discord--1877F2?style=social&logo=discord)](https://discord.gg/xmtRNkW7hW)
+[![GitHub followers](https://img.shields.io/github/followers/heathen-engineering?style=social)](https://github.com/heathen-engineering?tab=followers)
+
+Support Heathen by becoming a [GitHub Sponsor](https://github.com/sponsors/heathen-engineering). Sponsorship directly funds the development and maintenance of free tools like this, as well as our game development [Knowledge Base](https://heathen.group/) and community on [Discord](https://discord.gg/xmtRNkW7hW).
+
+Sponsors also get access to our private SourceRepo, which includes developer tools for O3DE, Unreal, Unity, and Godot.
+Learn more or explore other ways to support at [heathen.group/kb](https://heathen.group/kb/do-more/)
+
+---
+
+## What it does
+
+Godot has no built-in package manager, so addons that depend on other addons have historically had to hand-roll their own fetch/version-check logic, or simply assume the dependency is already there. Extension Resolver replaces that with one shared mechanism:
+
+| Feature | Description |
+|---|---|
+| **Version-checked dependencies** | Not just "is it installed," but "is it installed at a version that actually satisfies what I need." |
+| **One-click fetching** | Missing or out-of-range dependencies are fetched from their declared source with a single confirmation, never automatically. |
+| **Update checking** | Every installed extension is checked against its source for a newer release, right in the Project Settings tab. |
+| **Safe native-library gating** | GDExtension binaries with a hard dependency stay inert until every dependency is confirmed present, then unlock without needing an editor restart. |
+| **Libraries** | A catalogue view for installing addons you don't have yet, not just managing the ones you do. See [Library Schema](docs/library-schema.md). |
+
+Full documentation of the manifest format is in [`docs/manifest-schema.md`](docs/manifest-schema.md).
+
+---
+
+## Install
+
+Copy `addons/ExtensionResolver/` into your project's `addons/` folder and enable the plugin from **Project Settings > Plugins**. It is pure GDScript: no compiled binary, no native-library load order to worry about.
+
+Alternatively, if you install an addon that already depends on Extension Resolver, its own gate script will offer to fetch and enable Extension Resolver for you automatically the first time it is needed.
+
+---
 
 ## For extension authors
 
-1. Ship `extension.manifest.json` at your addon's root — see the schema doc.
-2. Copy `gate/extension_resolver_gate.gd` verbatim into your own `addons/<Name>/gate/` folder.
-3. In your `EditorPlugin` script: `const Gate = preload("res://addons/<Name>/gate/extension_resolver_gate.gd")`,
-   then call `Gate.ensure_unlocked(self, "<YourAddonId>", _on_unlocked)` from `_enter_tree()` — the
-   gate script has no `class_name` (deliberately, so multiple addons' copies don't collide), so it's
-   always reached via `preload()`, same as this ecosystem's existing gate convention. See the gate
-   script's own header comment for the exact contract.
+1. Ship an `extension.manifest.json` at your addon's root. See [`docs/manifest-schema.md`](docs/manifest-schema.md) for the full schema.
+2. Copy `gate/extension_resolver_gate.gd` into your own `addons/<YourAddon>/gate/` folder.
+3. From your `EditorPlugin`'s `_enter_tree()`, call `Gate.ensure_unlocked(self, "<YourAddonId>", _on_unlocked)`, using a `preload()` of the gate script you copied in step 2.
 
-That's the entire integration surface — everything else (version comparison, fetching, the
-Project Settings tab listing installed extensions and their update status) lives in Extension
-Resolver itself, not duplicated per-addon.
+That is the entire integration surface. Version comparison, fetching, and the Project Settings tab that lists every installed extension and its update status all live in Extension Resolver itself, so none of it needs to be duplicated per addon.
+
+---
+
+## License
+
+Apache 2.0.
