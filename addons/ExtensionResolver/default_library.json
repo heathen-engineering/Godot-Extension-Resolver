@@ -1,0 +1,99 @@
+{
+    "schema_version": 1,
+    "name": "Heathen Group: Godot Foundations",
+    "publisher": { "name": "Heathen Group", "url": "https://heathen.group" },
+    "entries": [
+        {
+            "id": "FoundationGameFramework",
+            "display_name": "Foundation for Game Framework",
+            "publisher": { "name": "Heathen Group", "url": "https://heathen.group" },
+            "description": "The engine-agnostic Subsystem/World/GameMode runtime every other Foundation gem builds on, plus the Subsystems Project Settings tab and Extension Resolver integration.",
+            "documentation_url": "https://github.com/heathen-engineering/Godot-Game-Framework#readme",
+            "license_url": "https://github.com/heathen-engineering/Godot-Game-Framework/blob/main/LICENSE",
+            "support_url": "https://discord.gg/xmtRNkW7hW",
+            "dependencies": [],
+            "source": {
+                "type": "github_release",
+                "repo": "heathen-engineering/Godot-Game-Framework"
+            }
+        },
+        {
+            "id": "FoundationGameplayTags",
+            "display_name": "Foundation for GameplayTags",
+            "publisher": { "name": "Heathen Group", "url": "https://heathen.group" },
+            "description": "Hierarchical dot-path GameplayTags for Godot: a hashed tag registry, condition/operation rules engine, and compact inspector editors. Ported from Unity-GameplayTags-Foundation.",
+            "documentation_url": "https://heathen.group/kb/gameplaytags-welcome/",
+            "license_url": "https://github.com/heathen-engineering/Godot-GameplayTags-Foundation/blob/main/LICENSE",
+            "support_url": "https://discord.gg/xmtRNkW7hW",
+            "dependencies": [
+                { "id": "FoundationGameFramework", "min_version": "1.0.0" }
+            ],
+            "source": {
+                "type": "github_release",
+                "repo": "heathen-engineering/Godot-GameplayTags-Foundation"
+            }
+        },
+        {
+            "id": "FoundationLexicon",
+            "display_name": "Foundation for Lexicon",
+            "publisher": { "name": "Heathen Group", "url": "https://heathen.group" },
+            "description": "Per-culture localisation for Godot: fallback resolution of strings and assets from .helex sources, plus LexiconText/LexiconSound/LexiconAsset field wrappers. Ported from Unity-Lexicon-Localisation-Foundation.",
+            "documentation_url": "https://heathen.group/kb/lexicon-welcome/",
+            "license_url": "https://github.com/heathen-engineering/Godot-Lexicon-Localisation-Foundation/blob/main/LICENSE",
+            "support_url": "https://discord.gg/xmtRNkW7hW",
+            "dependencies": [
+                { "id": "FoundationGameFramework", "min_version": "1.0.0" }
+            ],
+            "source": {
+                "type": "github_release",
+                "repo": "heathen-engineering/Godot-Lexicon-Localisation-Foundation"
+            }
+        },
+        {
+            "id": "FoundationOgham",
+            "display_name": "Foundation for Ogham Storyteller",
+            "publisher": { "name": "Heathen Group", "url": "https://heathen.group" },
+            "description": "The Ogham Storyteller narrative graph runtime: entries/options/content keys, session state machine with Fork routing, and inline @Token text markup. Composes with GameplayTags and Lexicon at runtime with no compile-time dependency on either. Ported from Unity-Ogham-Storyteller-Foundation.",
+            "documentation_url": "https://heathen.group/kb/ogham-welcome/",
+            "license_url": "https://github.com/heathen-engineering/Godot-Ogham-Storyteller-Foundation/blob/main/LICENSE",
+            "support_url": "https://discord.gg/xmtRNkW7hW",
+            "dependencies": [
+                { "id": "FoundationGameFramework", "min_version": "1.0.0" }
+            ],
+            "source": {
+                "type": "github_release",
+                "repo": "heathen-engineering/Godot-Ogham-Storyteller-Foundation"
+            }
+        },
+        {
+            "id": "FoundationSteamworks",
+            "display_name": "Foundation for Steamworks",
+            "publisher": { "name": "Heathen Group", "url": "https://heathen.group" },
+            "description": "A 1:1 Steamworks SDK wrapper for Godot: User, Achievements, Stats, Leaderboards, and App/Utilities, plus a settings dock and a Generate Code button producing a type-safe SteamGame.gd wrapper.",
+            "documentation_url": "https://heathen.group/kb/steam-welcome/",
+            "license_url": "https://github.com/heathen-engineering/Godot-Foundation-for-Steamworks/blob/main/LICENSE",
+            "support_url": "https://discord.gg/xmtRNkW7hW",
+            "dependencies": [
+                { "id": "FoundationGameFramework", "min_version": "1.0.0" }
+            ],
+            "source": {
+                "type": "github_release",
+                "repo": "heathen-engineering/Godot-Foundation-for-Steamworks"
+            }
+        },
+        {
+            "id": "FoundationXxHash",
+            "display_name": "Foundation for xxHash",
+            "publisher": { "name": "Heathen Group", "url": "https://heathen.group" },
+            "description": "xxHash (32/64/128-bit) exposed to GDScript and C# as an engine singleton: a low-level dependency shared by GameplayTags, Lexicon, and Ogham Storyteller.",
+            "documentation_url": "https://heathen.group/kb/do-more/",
+            "license_url": "https://github.com/heathen-engineering/Godot-xxHash/blob/main/LICENSE",
+            "support_url": "https://discord.gg/xmtRNkW7hW",
+            "dependencies": [],
+            "source": {
+                "type": "github_release",
+                "repo": "heathen-engineering/Godot-xxHash"
+            }
+        }
+    ]
+}

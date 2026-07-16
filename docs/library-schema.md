@@ -38,6 +38,26 @@ configurable via the `extension_resolver/libraries_config_path` Project Setting;
   plain HTTPS GET). Phase 1 does **not** scan a Git repo's tree for multiple `*.library.json`
   files — that's a Phase 2 concern (needs the same "list a repo's tree" capability
   `git_subfolder` fetching does).
+
+### Default library: bundled Heathen Foundations
+
+`res://addon_libraries.json` is seeded with a single default source the first time it's created
+for a project, not left empty. `ExtensionLibraryManifest.load_configured_sources()` writes it
+(and `DEFAULT_LIBRARY_SOURCE`) the first time it's called for a project with no config file yet:
+
+```json
+{ "type": "local", "path": "res://addons/ExtensionResolver/default_library.json" }
+```
+
+`default_library.json` (bundled with this addon itself) lists every current Heathen Foundation
+gem for Godot. The point: installing Extension Resolver "raw" and opening the Libraries tab
+surfaces the whole family immediately, no need to already know each Foundation's GitHub repo URL
+to add it by hand one at a time.
+
+This is only a seed, not a hardcoded always-on source. Once the config file exists, this method
+only ever reads it; a project that removes the default entry through the normal Libraries
+management window stays without it, permanently, exactly like removing any other configured
+Library.
 - **`local`** — a path to one Library JSON file on local disk.
 
 ## Library JSON (the file a `url`/`local` source points at)

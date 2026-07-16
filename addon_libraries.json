@@ -1,0 +1,9 @@
+{
+    "libraries": [
+        {
+            "path": "res://addons/ExtensionResolver/default_library.json",
+            "type": "local"
+        }
+    ],
+    "schema_version": 1
+}

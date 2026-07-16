@@ -16,6 +16,21 @@ const CONFIG_SETTING := "extension_resolver/libraries_config_path"
 const DEFAULT_CONFIG_PATH := "res://addon_libraries.json"
 const CURRENT_LIBRARY_SCHEMA_VERSION := 1
 
+## Bundled with this addon itself (see default_library.json), listing every
+## current Heathen Foundation gem for Godot, so installing Extension Resolver
+## "raw" surfaces the whole family in the Libraries tab immediately, rather
+## than a user needing to already know each Foundation's repo URL to add it
+## by hand one at a time. Seeded into a project's own config the first time
+## that config is created (see load_configured_sources() below), not
+## hardcoded into every read. Once seeded, it's a completely ordinary
+## configured source: editable/removable through the normal Libraries
+## management window like any other, no special-cased "can't remove this
+## one" behavior.
+const DEFAULT_LIBRARY_SOURCE := {
+	"type": "local",
+	"path": "res://addons/ExtensionResolver/default_library.json",
+}
+
 ## Registers the ProjectSettings entry if it isn't already there, and returns
 ## its current value — same "just works with the default, but is a real
 ## editable project setting" shape ProjectSettings expects, rather than the
@@ -27,15 +42,19 @@ static func configured_path() -> String:
 	var path: String = ProjectSettings.get_setting(CONFIG_SETTING, DEFAULT_CONFIG_PATH)
 	return path if not path.is_empty() else DEFAULT_CONFIG_PATH
 
-## Returns the list of configured Library sources — each a Dictionary shaped
-## { "type": "url"|"local", "url"|"path": String }. Empty array (not an
-## error) if the config file doesn't exist yet — a project that has never
-## added a Library is a perfectly normal, common state, same as "no
-## extensions installed yet" is for manifest_reader.gd.
+## Returns the list of configured Library sources, each a Dictionary shaped
+## { "type": "url"|"local", "url"|"path": String }. If the config file
+## doesn't exist yet, it's created and seeded with DEFAULT_LIBRARY_SOURCE
+## (see that constant's own comment for why) rather than just returning an
+## empty array. This is the one case where this method writes, not just
+## reads, but only on the very first call for a given project; every
+## subsequent call reads whatever the file already says, including a project
+## that has since removed the default source entirely.
 static func load_configured_sources() -> Array:
 	var path := configured_path()
 	if not FileAccess.file_exists(path):
-		return []
+		save_configured_sources([DEFAULT_LIBRARY_SOURCE])
+		return [DEFAULT_LIBRARY_SOURCE]
 
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
