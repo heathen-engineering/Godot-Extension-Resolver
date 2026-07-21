@@ -24,6 +24,7 @@ func _initialize() -> void:
 		"res://test/test_semver.gd",
 		"res://test/test_source_github_release.gd",
 		"res://test/test_default_library.gd",
+		"res://test/test_lockfile.gd",
 	]
 	for path in suite_paths:
 		var suite = load(path).new()

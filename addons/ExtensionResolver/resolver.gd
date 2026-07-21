@@ -334,4 +334,9 @@ func _fetch_one(host: Node, issue: Dictionary) -> bool:
 	# itself — see _ensure_plugin_enabled()'s doc comment.
 	if Engine.is_editor_hint():
 		call_deferred("_ensure_plugin_enabled", id)
+
+	# Keeps addons.lock.json a live reflection of "what's actually installed" after every
+	# change, same as ExtensionLibraryManifest.save_configured_sources() does for Library
+	# sources -- see lockfile.gd's own doc comment for why this can't just be written once.
+	ExtensionLockfile.write_lockfile()
 	return true

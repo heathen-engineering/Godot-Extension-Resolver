@@ -449,6 +449,7 @@ func _render_detail(id: String, manifest: Dictionary, is_installed: bool) -> voi
 			status_label.text = "Failed to update: %s" % err[0]
 			return
 		_resolver._ensure_gdextension_loaded(id)
+		ExtensionLockfile.write_lockfile()
 		status_label.text = "Updated to %s." % latest_version
 		refresh()
 	)
@@ -498,6 +499,7 @@ func _do_remove(id: String) -> void:
 	_remove_dir_recursive(ProjectSettings.globalize_path("res://addons/%s" % id))
 	if Engine.is_editor_hint():
 		EditorInterface.get_resource_filesystem().call_deferred("scan")
+	ExtensionLockfile.write_lockfile()
 	refresh()
 
 ## DirAccess has no built-in recursive delete — walks and removes children
