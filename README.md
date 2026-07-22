@@ -1,4 +1,4 @@
-> **Migrating to Codeberg:** this repo is moving to [codeberg.org/Heathen-Engineering/Godot-Extension-Resolver](https://codeberg.org/Heathen-Engineering/Godot-Extension-Resolver). GitHub will remain a read-only mirror during the transition.
+> **Moved to Codeberg:** this repo now lives at [codeberg.org/Heathen-Engineering/Godot-Extension-Resolver](https://codeberg.org/Heathen-Engineering/Godot-Extension-Resolver). GitHub will remain a read-only mirror during the transition.
 
 # Extension Resolver for Godot
 
