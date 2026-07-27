@@ -27,13 +27,16 @@ For general questions, help, and troubleshooting, join our [Discord](https://dis
 ---
 
 ## Become a GitHub Sponsor
+
+**Prefer a one-time purchase?** Heathen's own storefront is live, direct source access at [heathen.group/pricing](https://heathen.group/pricing/), no sponsorship required.
+
 [![Discord](https://img.shields.io/badge/Discord--1877F2?style=social&logo=discord)](https://discord.gg/xmtRNkW7hW)
 [![GitHub followers](https://img.shields.io/github/followers/heathen-engineering?style=social)](https://github.com/heathen-engineering?tab=followers)
 
 Support Heathen by becoming a [GitHub Sponsor](https://github.com/sponsors/heathen-engineering). Sponsorship directly funds the development and maintenance of free tools like this, as well as our game development [Knowledge Base](https://heathen.group/) and community on [Discord](https://discord.gg/xmtRNkW7hW).
 
 Sponsors also get access to our private SourceRepo, which includes developer tools for O3DE, Unreal, Unity, and Godot.
-Learn more or explore other ways to support at [heathen.group/kb](https://heathen.group/kb/do-more/)
+Learn more or explore other ways to support at [heathen.group/kb](https://heathen.group/pricing/)
 
 ---
 
